@@ -6,6 +6,18 @@ Keep your Claude Code sessions when Windows restarts, updates, or WSL shuts down
 
 herdr keeps its spaces and tabs after a restart. A terminal lost to a reboot, a `wsl --shutdown` or a Windows update comes back as a **bare shell in its last folder**, though. herdr never runs the original command again, so every `claude` that was open is gone and you have to find each session and `claude --resume <id>` it by hand.
 
+## Why this exists, and when to stop using it
+
+This is a stopgap. The older herdr TUI resumed agent sessions after a restart; the herdr app and herdr-core (0.1.x) don't yet. Upstream tracks it in:
+
+- [herdr-app#406](https://github.com/herdrdev/herdr-app/issues/406): after a reboot, agent sessions aren't resumed. A comment there reproduces it with Claude Code: every tab came back as a fresh shell, and nothing tied a tab to the session it had been running.
+- [herdr-core#15](https://github.com/herdrdev/herdr-core/issues/15): the design for a proper fix. Agents would report how to continue their conversation through OSC 7501, the escape code herdr already uses for agent status. herdr-core would store that on the terminal, and the app would offer to resume it.
+- [herdr-core#133](https://github.com/herdrdev/herdr-core/issues/133): the same loss when herdr-core is updated on a remote machine.
+
+Once herdr resumes Claude Code sessions itself, run `./install.sh --uninstall`; otherwise both would try to resume the same tab. Check those issues, or herdr's release notes, for a "resume" feature.
+
+It also avoids two bugs that the herdr TUI's built-in resume had: resuming the session from before a `/clear` ([herdr#5547](https://github.com/herdrdev/herdr/issues/5547)), and a nested `claude -p --resume` overwriting the tab's session ([herdr#4919](https://github.com/herdrdev/herdr/issues/4919)). The hook runs again after `/clear`, and it ignores any `claude` started by another `claude`.
+
 ## How it works
 
 Each herdr tab keeps the same address (`HC_TERMINAL_ID`, e.g. `t7`) after a restart. This setup uses that:
